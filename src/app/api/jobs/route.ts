@@ -19,7 +19,7 @@ export async function GET() {
   }
 }
 
-// CREATE new job
+// CREATE job
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -28,15 +28,17 @@ export async function POST(req: Request) {
       data: {
         title: body.title,
         description: body.description,
-        budget: Number(body.budget),
-        location: body.location,
+        budget: Number(body.budget) || 0,
+        location: body.location || "",
       },
     });
 
     return NextResponse.json(job);
-  } catch (error) {
+  } catch (error: any) {
+    console.error(error);
+
     return NextResponse.json(
-      { error: "Failed to create job" },
+      { error: error.message },
       { status: 500 }
     );
   }
