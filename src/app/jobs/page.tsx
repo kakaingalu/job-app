@@ -1,10 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import EditJobModal from "@/app/components/EditJobModal";
+
+
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingJob, setEditingJob] = useState<any>(null);
 
   useEffect(() => {
     fetch("/api/jobs")
@@ -45,36 +50,26 @@ export default function JobsPage() {
           <p>📍 {job.location}</p>
 
           <div className="flex gap-2 mt-2">
-            <button
-              className="bg-blue-500 text-white px-2 py-1 rounded"
-              onClick={async () => {
-                const newTitle = prompt("New title", job.title);
-                if (!newTitle) return;
-
-                await fetch(`/api/jobs/${job.id}`, {
-                  method: "PUT",
-                  body: JSON.stringify({
-                    ...job,
-                    title: newTitle,
-                  }),
-                });
-
-                window.location.reload();
-              }}
+           <button
+              className="bg-blue-500 text-white px-3 py-1 rounded-lg"
+              onClick={() => setEditingJob(job)}
             >
               Edit
             </button>
 
             <button
-              className="bg-red-500 text-white px-2 py-1 rounded"
+              className="bg-red-500 text-white px-3 py-1 rounded-lg"
               onClick={async () => {
-                if (!confirm("Delete this job?")) return;
+                const confirmDelete = confirm("Are you sure?");
+                if (!confirmDelete) return;
 
                 await fetch(`/api/jobs/${job.id}`, {
                   method: "DELETE",
                 });
 
-                window.location.reload();
+                setJobs((prev) => prev.filter((j) => j.id !== job.id));
+
+                toast.success("Job deleted 🗑️");
               }}
             >
               Delete
@@ -82,6 +77,34 @@ export default function JobsPage() {
           </div>
         </div>
       ))}
+
+      {editingJob && (
+        <EditJobModal
+          job={editingJob}
+          onClose={() => setEditingJob(null)}
+          onSave={async (updatedJob: any) => {
+            const res = await fetch(`/api/jobs/${updatedJob.id}`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(updatedJob),
+            });
+
+            const data = await res.json();
+
+            setJobs((prev) =>
+              prev.map((j) => (j.id === data.id ? data : j))
+            );
+
+            toast.success("Job updated ✅");
+            setEditingJob(null);
+          }}
+        />
+      )}
     </div>
+
+
+
   );
 }
